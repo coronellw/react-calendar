@@ -9,7 +9,7 @@ const Reminder = styled.li`
 
 const Day = props => {
   const { reminders } = props;
-  let remindersElement = Array.isArray(reminders) ? reminders.map((r, i) => <Reminder key={i} bgColor={r.color}>{r.title}</Reminder>) : [];
+  let remindersElement = Array.isArray(reminders) ? reminders.map((r, i) => <Reminder title={r.weather} key={r.title + '_' + i} bgColor={r.color}>{r.title}</Reminder>) : [];
   const StyledDay = styled.span`
     border: 1px solid black;
     padding: 0.5rem;

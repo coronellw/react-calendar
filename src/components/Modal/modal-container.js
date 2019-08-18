@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import moment from 'moment';
 import styled from 'styled-components';
+import { geolocation, weatherFetcher } from '../../config';
 import { CirclePicker } from 'react-color';
+
 
 const StyledButton = styled.a`
   border-radius: 100rem;
@@ -16,10 +19,6 @@ const StyledButton = styled.a`
   &.info {
     background-color: blue;
   }
-`;
-const StyledButtomSection = styled.div`
-  margin-top: 2rem;
-  text-align: right;
 `;
 
 const StyledTextArea = styled.textarea`
@@ -81,7 +80,7 @@ const StyledColor = styled.span`
     border: 1px solid black;
     padding: 5px;
     cursor: pointer;
-    margin-bottom: 1rem;
+    margin: 1rem 0;
   `;
 
 const Modal = props => {
@@ -104,10 +103,10 @@ const Modal = props => {
         </div>
 
         <label>Date: </label>
-        <StyledInput type="date" />
+        <StyledInput type="date" value={date} onChange={e => setDate(e.target.value)} />
 
         <label>Time: </label>
-        <StyledInput type="time" />
+        <StyledInput type="time" value={time} onChange={e => setTime(e.target.value)} />
 
         <label>City: </label>
         <StyledInput type="text" value={city} onChange={e => setCity(e.target.value)} />
@@ -135,15 +134,24 @@ const Modal = props => {
               bgColor={color}>&nbsp;</StyledColor>
         }
         <StyledButton onClick={props.onCancel} className="danger">Cancel</StyledButton>
-        <StyledButton 
-          onClick={() =>{
-              if(title.length < 30) {
-                props.onSave({ title, city, note, color, });
-              } else {
-                alert('Please correct the errors first');
+        <StyledButton
+          onClick={async () => {
+            if (title.length < 30) {
+              try {
+                const locationCoordinates = await geolocation.get(`/${city}.json`);
+                const [latitude, longitude] = locationCoordinates.data.features[0].center;
+                const wtime = moment(date).format('YYYY-MM-DDTHH:MM:SS');
+                const weather = await weatherFetcher.get(`/${longitude},${latitude},${wtime}`);
+                props.onSave({ title, city, note, color, reminderDate: date, reminderTime: time, weather: weather.data.currently.summary + '@' + city });
               }
+              catch (e) {
+                console.log('There was an error fetching data');
+              }
+            } else {
+              alert('Please correct the errors first');
             }
-          } 
+          }
+          }
           className="info">Save</StyledButton>
       </span>
     </StyledDiv>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import moment from 'moment';
 
 import Day from '../Days/day-container';
 import Modal from '../Modal/modal-container';
@@ -35,38 +36,47 @@ const StyledMonth = styled.div`
   }
 `;
 
+const AddReminder = styled.span`
+  opacity: ${props => props.visible ? '1':'0'}
+  border-radius: 100rem;
+  background-color: #557bd4;
+  color: white;
+  font-weight: bold;
+  font-size: 2rem;
+  padding: .5rem 1rem;
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  transition: all 1s;
+`;
+
 const Month = props => {
   const [isDialogVisible, setDialogVisible] = useState(false);
-  const [selectedDate, setDate] = useState(0);
+  const [date, setDate] = useState(`2019-08`);
   const [reminders, setReminders] = useState({});
   let days = [];
 
-  const addReminder = day => {
-    setDialogVisible(!isDialogVisible);
-    setDate(day);
-  }
-
-  const saveReminder = ({ title, city, note, color }) => {
-    if (Array.isArray(reminders[selectedDate])) { 
-      reminders[selectedDate].push({ title, city, note, color }); 
-    } else { 
-      reminders[selectedDate] = [{ title, city, note, color }];
+  const saveReminder = ({ title, city, note, color, reminderDate, reminderTime, weather, }) => {
+    if (Array.isArray(reminders[moment(reminderDate).format('DDMMYYYY')])) {
+      reminders[moment(reminderDate).format('DDMMYYYY')].push({ title, city, note, color, reminderTime, weather, });
+    } else {
+      reminders[moment(reminderDate).format('DDMMYYYY')] = [{ title, city, note, color, weather, }];
     };
     setReminders(reminders);
     setDialogVisible(false);
   };
 
-  let today = new Date();
-  for (let day = 0; day <= 34; day++) {
-    console.log(today);
-    console.log(`First day: ${new Date(today.getFullYear(), today.getMonth(), 1)}`)
-    console.log(`Lastn day: ${new Date(today.getFullYear(), today.getMonth(), -1)}`)
-    console.log(`Month: ${today.getMonth() + 1}`);
-    console.log(`WeekDay ${today.getDay()}`);
-    days.push(<Day key={today + day} date={day % 31 + 1} onClick={() => addReminder((day % 31) + 1)} reminders={reminders[day+1]} />);
+  let [selectedYear, selectedMonth] = date.toString().split('-');
+  let today = new Date(selectedYear, selectedMonth - 1, 1);
+  let offSet = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+
+  for (let day = 1; day <= 35; day++) {
+    let currentDay = new Date(today.getFullYear(), today.getMonth(), day - offSet);
+    days.push(<Day key={currentDay.getTime()} date={currentDay.getDate()} reminders={reminders[moment(currentDay).format('DDMMYYYY')]} />);
   }
   return (
     <React.Fragment>
+      <input value={date} type="month" onChange={e => setDate(e.target.value)} />
       <StyledMonth>
         <span className="header">Sunday</span>
         <span className="header">Monday</span>
@@ -78,11 +88,11 @@ const Month = props => {
         {days}
       </StyledMonth>
       <Modal
-        title={`Set reminder for ${selectedDate}`}
         visible={isDialogVisible}
         onSave={saveReminder}
         onCancel={() => setDialogVisible(false)}
       />
+      <AddReminder visible={!isDialogVisible} onClick={() => setDialogVisible(true)}>+</AddReminder>
     </React.Fragment>
   );
 }
