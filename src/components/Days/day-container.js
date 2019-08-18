@@ -10,7 +10,7 @@ const StyledDay = styled.span`
 const Day = props => {
 
   return (
-    <StyledDay className="day" onClick={() => { alert(props.date) }}>
+    <StyledDay className="day" onClick={props.onClick}>
       {props.date}
     </StyledDay>
   )
