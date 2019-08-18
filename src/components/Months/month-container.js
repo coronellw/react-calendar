@@ -38,6 +38,7 @@ const StyledMonth = styled.div`
 const Month = props => {
   const [isDialogVisible, setDialogVisible] = useState(false);
   const [selectedDate, setDate] = useState(0);
+  const [reminders, setReminders] = useState({});
   let days = [];
 
   const addReminder = day => {
@@ -45,9 +46,24 @@ const Month = props => {
     setDate(day);
   }
 
-  let currentMonth = 'Jan'
+  const saveReminder = ({ title, city, note, color }) => {
+    if (Array.isArray(reminders[selectedDate])) { 
+      reminders[selectedDate].push({ title, city, note, color }); 
+    } else { 
+      reminders[selectedDate] = [{ title, city, note, color }];
+    };
+    setReminders(reminders);
+    setDialogVisible(false);
+  };
+
+  let today = new Date();
   for (let day = 0; day <= 34; day++) {
-    days.push(<Day key={currentMonth + day} date={day % 31 + 1} onClick={() => addReminder((day % 31) + 1)} />);
+    console.log(today);
+    console.log(`First day: ${new Date(today.getFullYear(), today.getMonth(), 1)}`)
+    console.log(`Lastn day: ${new Date(today.getFullYear(), today.getMonth(), -1)}`)
+    console.log(`Month: ${today.getMonth() + 1}`);
+    console.log(`WeekDay ${today.getDay()}`);
+    days.push(<Day key={today + day} date={day % 31 + 1} onClick={() => addReminder((day % 31) + 1)} reminders={reminders[day+1]} />);
   }
   return (
     <React.Fragment>
@@ -61,7 +77,12 @@ const Month = props => {
         <span className="header">Saturday</span>
         {days}
       </StyledMonth>
-      <Modal title={`Set reminder for ${selectedDate}`} visible={isDialogVisible}/>
+      <Modal
+        title={`Set reminder for ${selectedDate}`}
+        visible={isDialogVisible}
+        onSave={saveReminder}
+        onCancel={() => setDialogVisible(false)}
+      />
     </React.Fragment>
   );
 }

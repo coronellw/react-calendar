@@ -1,25 +1,66 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
+import { CirclePicker } from 'react-color';
 
-const Modal = props => {
-  const StyledDiv = styled.div`
-    display: ${props.visible ? 'block' : 'none'};
+const StyledButton = styled.a`
+  border-radius: 100rem;
+  color: white;
+  font-weight: 400;
+  text-align: center;
+  padding: 10px 20px;
+  margin-right: 1rem;
+  cursor: pointer;
+  &.danger {
+    background-color: red;
+  }
+  &.info {
+    background-color: blue;
+  }
+`;
+const StyledButtomSection = styled.div`
+  margin-top: 2rem;
+  text-align: right;
+`;
+
+const StyledTextArea = styled.textarea`
+  border-radius: 15px;
+  padding: 5px 10px;
+  margin: 3px;
+`;
+const StyledInput = styled.input`
+  border-radius: 15px;
+  padding: 5px 10px;
+  margin: 3px;
+`;
+const StyledError = styled.span`
+  color: red;
+  font-size: .75rem;
+`;
+
+const StyledDiv = styled.div`
+    display: ${props => props.visible ? 'block' : 'none'};
     position: absolute;
     top: 0;
     right: 0;
     background-color: rgba(0,0,0,.7);
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     
     span.content {
       background-color: white;
+      display: grid;
       border-radius: 15px;
       font-size: 1rem;
       position: absolute;
       padding: 4rem 2rem;
       top: 20%;
-      right: 25%;
-      width: 50%;
+      left: 25%;
+      width: 60%;
+      transform: translateX(-15%);
+
+      @media screen and (min-width: 480px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
 
       .title {
         position: absolute;
@@ -34,37 +75,76 @@ const Modal = props => {
     }
   `;
 
-  const StyledButton = styled.a`
-    border-radius: 100rem;
-    text-align: center;
-    padding: 10px 20px;
-    margin-right: 1rem;
-    &.danger {
-      background-color: red;
-    }
-    &.info {
-      background-color: blue;
-    }
+const StyledColor = styled.span`
+    background-color: ${props => props.bgColor};
+    border-radius: 100px;
+    border: 1px solid black;
+    padding: 5px;
+    cursor: pointer;
+    margin-bottom: 1rem;
   `;
-  const StyledButtomSection = styled.div`
-    margin-top: 2rem;
-    text-align: right;
-  `;
+
+const Modal = props => {
+  const [color, setColor] = useState('#ffffff');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [title, setTitle] = useState('');
+  const [city, setCity] = useState('');
+  const [note, setNote] = useState('');
+  const [time, setTime] = useState('');
+  const [date, setDate] = useState('');
+
   return (
-    <StyledDiv>
+    <StyledDiv visible={props.visible}>
       <span className="content">
-        <span className="title">{props.title}</span>
+        <span className="title">New Reminder</span>
+        <label>Title: </label>
+        <div>
+          <StyledInput type="text" value={title} onChange={e => setTitle(e.target.value)} />
+          {title.length > 30 ? <StyledError>Title must be 30 characters max</StyledError> : null}
+        </div>
+
+        <label>Date: </label>
+        <StyledInput type="date" />
+
+        <label>Time: </label>
+        <StyledInput type="time" />
+
         <label>City: </label>
-        <input type="text" />
-        <br />
+        <StyledInput type="text" value={city} onChange={e => setCity(e.target.value)} />
+
         <label>Reminder:</label>
-        <br />
-        <textarea rows="4" cols="50" />
-        <br />
-        <StyledButtomSection>
-          <StyledButton className="danger">Cancel</StyledButton>
-          <StyledButton className="info">Submit</StyledButton>
-        </StyledButtomSection>
+        <StyledTextArea value={note} rows="3" onChange={e => setNote(e.target.value)} />
+
+        <label>Color: </label>
+        {
+          showColorPicker ?
+            <CirclePicker
+              color={color}
+              width="80%"
+              onChange={selectedColor => {
+                if (color === selectedColor.hex) {
+                  setColor('#ffffff')
+                } else {
+                  setColor(selectedColor.hex)
+                }
+                setShowColorPicker(false);
+              }}
+            />
+            : <StyledColor
+              onClick={() => setShowColorPicker(true)}
+              bgColor={color}>&nbsp;</StyledColor>
+        }
+        <StyledButton onClick={props.onCancel} className="danger">Cancel</StyledButton>
+        <StyledButton 
+          onClick={() =>{
+              if(title.length < 30) {
+                props.onSave({ title, city, note, color, });
+              } else {
+                alert('Please correct the errors first');
+              }
+            }
+          } 
+          className="info">Save</StyledButton>
       </span>
     </StyledDiv>
   );
