@@ -37,7 +37,7 @@ const StyledMonth = styled.div`
 `;
 
 const AddReminder = styled.span`
-  opacity: ${props => props.visible ? '1':'0'}
+  opacity: ${props => props.visible ? '1' : '0'}
   border-radius: 100rem;
   background-color: #557bd4;
   color: white;
@@ -49,22 +49,60 @@ const AddReminder = styled.span`
   right: 1rem;
   transition: all 1s;
 `;
+const StyledTitle = styled.h2`
+  font-size: 2rem;
+  margin: 1rem;
+  text-align: center;
+`;
+
+const momentFormat = date => moment(date).format('DDMMYYYY');
 
 const Month = props => {
   const [isDialogVisible, setDialogVisible] = useState(false);
+  const [isEditing, setEditing] = useState(false);
   const [date, setDate] = useState(`2019-08`);
   const [reminders, setReminders] = useState({});
+  const [reminder, setReminder] = useState({
+    title: '',
+    city: '',
+    note: '',
+    color: '#fff',
+    date: '',
+    reminderTime: '',
+    weather: '',
+  });
+
   let days = [];
 
-  const saveReminder = ({ title, city, note, color, reminderDate, reminderTime, weather, }) => {
-    if (Array.isArray(reminders[moment(reminderDate).format('DDMMYYYY')])) {
-      reminders[moment(reminderDate).format('DDMMYYYY')].push({ title, city, note, color, reminderTime, weather, });
+  const saveReminder = ({ id, title, city, note, color, reminderDate, reminderTime, weather, previousId, }) => {
+    // Delete previous occurrence if updating
+    let temp = reminders;
+    if( previousId && previousId.id){
+      let timestamp = momentFormat(previousId.date);
+      temp[timestamp] = temp[timestamp].filter(r => r.id !== previousId.id);
+    }
+
+    if (Array.isArray(temp[momentFormat(reminderDate)])) {
+      temp[momentFormat(reminderDate)].push({ id, title, city, note, color, date: reminderDate, time: reminderTime, weather, });
     } else {
-      reminders[moment(reminderDate).format('DDMMYYYY')] = [{ title, city, note, color, weather, }];
+      temp[momentFormat(reminderDate)] = [{ id, title, city, note, color, date: reminderDate, time: reminderTime, weather, }];
     };
-    setReminders(reminders);
+    setReminders(temp);
+    setReminder(null);
     setDialogVisible(false);
   };
+
+  const newReminder = () => {
+    setEditing(false);
+    setDialogVisible(true);
+  }
+
+  const editReminder = (id, date) => {
+    let r = reminders[momentFormat(date)].find(reminder => reminder.id === id);
+    setReminder(r);
+    setEditing(true);
+    setDialogVisible(true);
+  }
 
   let [selectedYear, selectedMonth] = date.toString().split('-');
   let today = new Date(selectedYear, selectedMonth - 1, 1);
@@ -72,11 +110,17 @@ const Month = props => {
 
   for (let day = 1; day <= 35; day++) {
     let currentDay = new Date(today.getFullYear(), today.getMonth(), day - offSet);
-    days.push(<Day key={currentDay.getTime()} date={currentDay.getDate()} reminders={reminders[moment(currentDay).format('DDMMYYYY')]} />);
+    days.push(<Day
+      key={currentDay.getTime()}
+      date={currentDay.getDate()}
+      editReminder={editReminder}
+      reminders={reminders[momentFormat(currentDay)]}
+    />);
   }
   return (
     <React.Fragment>
       <input value={date} type="month" onChange={e => setDate(e.target.value)} />
+      <StyledTitle>{moment(date+'-01').format('MMMM - YYYY')}</StyledTitle>
       <StyledMonth>
         <span className="header">Sunday</span>
         <span className="header">Monday</span>
@@ -90,9 +134,15 @@ const Month = props => {
       <Modal
         visible={isDialogVisible}
         onSave={saveReminder}
-        onCancel={() => setDialogVisible(false)}
+        onCancel={() => {setDialogVisible(false); setEditing(false)}}
+        reminder={isEditing ? reminder : null}
+        editMode={isEditing}
       />
-      <AddReminder visible={!isDialogVisible} onClick={() => setDialogVisible(true)}>+</AddReminder>
+      <AddReminder
+        visible={!isDialogVisible}
+        onClick={newReminder}
+        reminder={null}
+      >+</AddReminder>
     </React.Fragment>
   );
 }

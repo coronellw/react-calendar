@@ -8,8 +8,19 @@ const Reminder = styled.li`
 `;
 
 const Day = props => {
-  const { reminders } = props;
-  let remindersElement = Array.isArray(reminders) ? reminders.map((r, i) => <Reminder title={r.weather} key={r.title + '_' + i} bgColor={r.color}>{r.title}</Reminder>) : [];
+  const { reminders, editReminder } = props;
+  let remindersElement = Array.isArray(reminders) ?
+    reminders.map((r, i) => {
+      return <Reminder
+        key={r.title + '_' + i}
+        title={r.weather}
+        bgColor={r.color}
+        onClick={() => {
+          editReminder(r.id, r.date);
+        }}
+      >{r.title}</Reminder>
+    })
+    : [];
   const StyledDay = styled.span`
     border: 1px solid black;
     padding: 0.5rem;

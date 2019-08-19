@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Component } from 'react';
 import moment from 'moment';
 import styled from 'styled-components';
 import { geolocation, weatherFetcher } from '../../config';
@@ -83,79 +83,120 @@ const StyledColor = styled.span`
     margin: 1rem 0;
   `;
 
-const Modal = props => {
-  const [color, setColor] = useState('#ffffff');
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [title, setTitle] = useState('');
-  const [city, setCity] = useState('');
-  const [note, setNote] = useState('');
-  const [time, setTime] = useState('');
-  const [date, setDate] = useState('');
+class Modal extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      showColorPicker: false,
+      color: '#fff',
+      title: '',
+      city: '',
+      note: '',
+      time: '',
+      date: ''
+    }
+  }
 
-  return (
-    <StyledDiv visible={props.visible}>
-      <span className="content">
-        <span className="title">New Reminder</span>
-        <label>Title: </label>
-        <div>
-          <StyledInput type="text" value={title} onChange={e => setTitle(e.target.value)} />
-          {title.length > 30 ? <StyledError>Title must be 30 characters max</StyledError> : null}
-        </div>
+  componentDidUpdate() {
+    const { editMode, reminder } = this.props;
+    if (editMode && reminder && (this.state.previousId === undefined)) {
+      this.setState({
+        ...reminder,
+        previousId: {
+          date: reminder.date,
+          id: reminder.id,
+          time: reminder.time,
+        },
+      })
+    }
+  }
 
-        <label>Date: </label>
-        <StyledInput type="date" value={date} onChange={e => setDate(e.target.value)} />
+  render() {
+    const { title, color, date, time, city, note, showColorPicker, previousId } = this.state;
+    const { onCancel, onSave, visible, } = this.props;
+    const initialState = { showColorPicker: false, color: '#fff', title: '', city: '', note: '', time: '', date: '', id: null, weather: '', previousId: undefined, };
 
-        <label>Time: </label>
-        <StyledInput type="time" value={time} onChange={e => setTime(e.target.value)} />
+    return (
+      visible && <StyledDiv visible={visible}>
+        <span className="content">
+          <span className="title">New Reminder</span>
+          <label>Title: </label>
+          <div>
+            <StyledInput type="text" value={title} onChange={e => this.setState({ title: e.target.value })} />
+            {title.length > 30 ? <StyledError>Title must be 30 characters max</StyledError> : null}
+          </div>
 
-        <label>City: </label>
-        <StyledInput type="text" value={city} onChange={e => setCity(e.target.value)} />
+          <label>Date: </label>
+          <StyledInput type="date" value={date} onChange={e => this.setState({ date: e.target.value })} />
 
-        <label>Reminder:</label>
-        <StyledTextArea value={note} rows="3" onChange={e => setNote(e.target.value)} />
+          <label>Time: </label>
+          <StyledInput type="time" value={time} onChange={e => this.setState({ time: e.target.value })} />
 
-        <label>Color: </label>
-        {
-          showColorPicker ?
-            <CirclePicker
-              color={color}
-              width="80%"
-              onChange={selectedColor => {
-                if (color === selectedColor.hex) {
-                  setColor('#ffffff')
-                } else {
-                  setColor(selectedColor.hex)
+          <label>City: </label>
+          <StyledInput type="text" value={city} onChange={e => this.setState({ city: e.target.value })} />
+
+          <label>Reminder:</label>
+          <StyledTextArea value={note} rows="3" onChange={e => this.setState({ note: e.target.value })} />
+
+          <label>Color: </label>
+          {
+            showColorPicker ?
+              <CirclePicker
+                color={color}
+                width="80%"
+                onChange={selectedColor => {
+                  if (color === selectedColor.hex) {
+                    this.setState({ color: '#ffffff' })
+                  } else {
+                    this.setState({ color: selectedColor.hex })
+                  }
+                  this.setState({ showColorPicker: false });
+                }}
+              />
+              : <StyledColor
+                onClick={() => this.setState({ showColorPicker: true })}
+                bgColor={color}>&nbsp;</StyledColor>
+          }
+          <StyledButton
+            onClick={() => {
+              onCancel();
+              this.setState(initialState);
+            }}
+            className="danger">Cancel</StyledButton>
+          <StyledButton
+            onClick={async () => {
+              if (title.length < 30) {
+                try {
+                  const locationCoordinates = await geolocation.get(`/${city}.json`);
+                  const [latitude, longitude] = locationCoordinates.data.features[0].center;
+                  const wtime = moment(date).format('YYYY-MM-DDTHH:MM:SS');
+                  const weather = await weatherFetcher.get(`/${longitude},${latitude},${wtime}`);
+                  this.setState(initialState,
+                    onSave({
+                      id: new Date(`${date} ${time}`).getTime(),
+                      title,
+                      city,
+                      note,
+                      color,
+                      reminderDate: date,
+                      reminderTime: time,
+                      weather: weather.data.currently.summary + '@' + city,
+                      previousId,
+                    }));
                 }
-                setShowColorPicker(false);
-              }}
-            />
-            : <StyledColor
-              onClick={() => setShowColorPicker(true)}
-              bgColor={color}>&nbsp;</StyledColor>
-        }
-        <StyledButton onClick={props.onCancel} className="danger">Cancel</StyledButton>
-        <StyledButton
-          onClick={async () => {
-            if (title.length < 30) {
-              try {
-                const locationCoordinates = await geolocation.get(`/${city}.json`);
-                const [latitude, longitude] = locationCoordinates.data.features[0].center;
-                const wtime = moment(date).format('YYYY-MM-DDTHH:MM:SS');
-                const weather = await weatherFetcher.get(`/${longitude},${latitude},${wtime}`);
-                props.onSave({ title, city, note, color, reminderDate: date, reminderTime: time, weather: weather.data.currently.summary + '@' + city });
+                catch (e) {
+                  console.log('There was an error fetching data', e);
+                }
+              } else {
+                alert('Please correct the errors first');
               }
-              catch (e) {
-                console.log('There was an error fetching data');
-              }
-            } else {
-              alert('Please correct the errors first');
             }
-          }
-          }
-          className="info">Save</StyledButton>
-      </span>
-    </StyledDiv>
-  );
+            }
+            className="info">Save</StyledButton>
+        </span>
+      </StyledDiv>
+    )
+  };
 }
 
 export default Modal;
