@@ -1,6 +1,8 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import moment from 'moment';
 import styled from 'styled-components';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { geolocation, weatherFetcher } from '../../config';
 import { CirclePicker } from 'react-color';
 
@@ -20,17 +22,21 @@ const StyledButton = styled.a`
     background-color: blue;
   }
 `;
+StyledButton.displayName = 'StyledButton';
 
 const StyledTextArea = styled.textarea`
   border-radius: 15px;
   padding: 5px 10px;
   margin: 3px;
 `;
+StyledTextArea.displayName = 'StyledTextArea';
 const StyledInput = styled.input`
   border-radius: 15px;
   padding: 5px 10px;
   margin: 3px;
 `;
+StyledInput.displayName = 'StyledInput';
+
 const StyledError = styled.span`
   color: red;
   font-size: .75rem;
@@ -73,6 +79,7 @@ const StyledDiv = styled.div`
       }
     }
   `;
+StyledDiv.displayName = 'ModalSection'
 
 const StyledColor = styled.span`
     background-color: ${props => props.bgColor};
@@ -113,30 +120,30 @@ class Modal extends Component {
 
   render() {
     const { title, color, date, time, city, note, showColorPicker, previousId } = this.state;
-    const { onCancel, onSave, visible, } = this.props;
+    const { onCancel, onSave, visible, editMode, deleteOne } = this.props;
     const initialState = { showColorPicker: false, color: '#fff', title: '', city: '', note: '', time: '', date: '', id: null, weather: '', previousId: undefined, };
 
     return (
-      visible && <StyledDiv visible={visible}>
+      <StyledDiv visible={visible}>
         <span className="content">
-          <span className="title">New Reminder</span>
+          <span className="title">{editMode ? <Fragment>Edit Reminder {'   '}<FontAwesomeIcon onClick={() => deleteOne(previousId)} icon={faTrash} color="#f00" /></Fragment> : 'New Reminder'}</span>
           <label>Title: </label>
           <div>
-            <StyledInput type="text" value={title} onChange={e => this.setState({ title: e.target.value })} />
+            <StyledInput displayName="Title" type="text" name="title" value={title} onChange={e => this.setState({ title: e.target.value })} />
             {title.length > 30 ? <StyledError>Title must be 30 characters max</StyledError> : null}
           </div>
 
           <label>Date: </label>
-          <StyledInput type="date" value={date} onChange={e => this.setState({ date: e.target.value })} />
+          <StyledInput type="date" name="date" value={date} onChange={e => this.setState({ date: e.target.value })} />
 
           <label>Time: </label>
-          <StyledInput type="time" value={time} onChange={e => this.setState({ time: e.target.value })} />
+          <StyledInput type="time" name="time" value={time} onChange={e => this.setState({ time: e.target.value })} />
 
           <label>City: </label>
-          <StyledInput type="text" value={city} onChange={e => this.setState({ city: e.target.value })} />
+          <StyledInput type="text" name="city" value={city} onChange={e => this.setState({ city: e.target.value })} />
 
           <label>Reminder:</label>
-          <StyledTextArea value={note} rows="3" onChange={e => this.setState({ note: e.target.value })} />
+          <StyledTextArea value={note} name="note" rows="3" onChange={e => this.setState({ note: e.target.value })} />
 
           <label>Color: </label>
           {
@@ -171,7 +178,7 @@ class Modal extends Component {
                   const [latitude, longitude] = locationCoordinates.data.features[0].center;
                   const wtime = moment(date).format('YYYY-MM-DDTHH:MM:SS');
                   const weather = await weatherFetcher.get(`/${longitude},${latitude},${wtime}`);
-                  this.setState(initialState,
+                  this.setState(initialState, () => {
                     onSave({
                       id: new Date(`${date} ${time}`).getTime(),
                       title,
@@ -182,7 +189,8 @@ class Modal extends Component {
                       reminderTime: time,
                       weather: weather.data.currently.summary + '@' + city,
                       previousId,
-                    }));
+                    })
+                  });
                 }
                 catch (e) {
                   console.log('There was an error fetching data', e);

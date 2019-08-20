@@ -49,6 +49,7 @@ const AddReminder = styled.span`
   right: 1rem;
   transition: all 1s;
 `;
+AddReminder.displayName = 'AddReminder';
 const StyledTitle = styled.h2`
   font-size: 2rem;
   margin: 1rem;
@@ -77,7 +78,7 @@ const Month = props => {
   const saveReminder = ({ id, title, city, note, color, reminderDate, reminderTime, weather, previousId, }) => {
     // Delete previous occurrence if updating
     let temp = reminders;
-    if( previousId && previousId.id){
+    if (previousId && previousId.id) {
       let timestamp = momentFormat(previousId.date);
       temp[timestamp] = temp[timestamp].filter(r => r.id !== previousId.id);
     }
@@ -104,6 +105,32 @@ const Month = props => {
     setDialogVisible(true);
   }
 
+  const deleteReminders = (fullDate) => {
+    let dayToDelete = new Date(fullDate);
+    let temp = reminders;
+    let answer = window.confirm(`Do you want to delete ALL the reminders of ${moment(dayToDelete).format('MMMM-DD-YYYY')}?`)
+    if (answer) {
+      debugger;
+      temp[momentFormat(dayToDelete)] = [];
+      setReminders(temp);
+      setReminder({});
+    }
+  }
+
+  const deleteOne = (previousId) => {
+    let answer = window.confirm('Do you want to delete this reminder?');
+    if (answer) {
+      let temp = reminders;
+      if (previousId && previousId.id) {
+        let timestamp = momentFormat(previousId.date);
+        temp[timestamp] = temp[timestamp].filter(r => r.id !== previousId.id);
+      }
+      setReminders(temp);
+      setReminder(null);
+      setDialogVisible(false);
+    }
+  }
+
   let [selectedYear, selectedMonth] = date.toString().split('-');
   let today = new Date(selectedYear, selectedMonth - 1, 1);
   let offSet = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
@@ -113,6 +140,8 @@ const Month = props => {
     days.push(<Day
       key={currentDay.getTime()}
       date={currentDay.getDate()}
+      fullDate={currentDay.getTime()}
+      deleteReminders={deleteReminders}
       editReminder={editReminder}
       reminders={reminders[momentFormat(currentDay)]}
     />);
@@ -120,7 +149,7 @@ const Month = props => {
   return (
     <React.Fragment>
       <input value={date} type="month" onChange={e => setDate(e.target.value)} />
-      <StyledTitle>{moment(date+'-01').format('MMMM - YYYY')}</StyledTitle>
+      <StyledTitle>{moment(date + '-01').format('MMMM - YYYY')}</StyledTitle>
       <StyledMonth>
         <span className="header">Sunday</span>
         <span className="header">Monday</span>
@@ -134,11 +163,13 @@ const Month = props => {
       <Modal
         visible={isDialogVisible}
         onSave={saveReminder}
-        onCancel={() => {setDialogVisible(false); setEditing(false)}}
+        deleteOne={deleteOne}
+        onCancel={() => { setDialogVisible(false); setEditing(false) }}
         reminder={isEditing ? reminder : null}
         editMode={isEditing}
       />
       <AddReminder
+        id="addButton"
         visible={!isDialogVisible}
         onClick={newReminder}
         reminder={null}
